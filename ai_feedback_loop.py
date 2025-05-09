@@ -1,3 +1,17 @@
+from crewai.flow import Flow, router, start, listen, and_, or_
+from pydantic import BaseModel
+from typing import Optional
+import nest_asyncio
+nest_asyncio.apply()
+
+class State(BaseModel):
+  test_code:str=""
+  expected_coverage:int=0
+  feedback:str=""
+  pass_fail:str=""
+  task_id_4:str=""
+  task_id_5:str=""
+    
 class RMJT(Flow[State]):
     en_gen = EnhancedGenerator()
     """Reasoning Model Jest Tester"""
