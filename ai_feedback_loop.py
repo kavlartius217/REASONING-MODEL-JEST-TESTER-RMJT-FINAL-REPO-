@@ -9,9 +9,9 @@ class State(BaseModel):
   expected_coverage:int=0
   feedback:str=""
   pass_fail:str=""
+  task_id_3:str=""
   task_id_4:str=""
-  task_id_5:str=""
-    
+
 class RMJT(Flow[State]):
     en_gen = EnhancedGenerator()
     """Reasoning Model Jest Tester"""
@@ -37,36 +37,36 @@ class RMJT(Flow[State]):
         x = subprocess.run(['crewai', 'log-tasks-outputs'],
                           capture_output=True, text=True, check=True).stdout.splitlines()
         for i in x:
+            if 'Task 3:' in i:
+                parts = i.split('Task 3:')
+                if len(parts) > 1:
+                    self.state.task_id_3 = parts[1].strip()
+                    print(f"Found task 3 ID: {self.state.task_id_3}")
+
             if 'Task 4:' in i:
                 parts = i.split('Task 4:')
                 if len(parts) > 1:
                     self.state.task_id_4 = parts[1].strip()
                     print(f"Found task 4 ID: {self.state.task_id_4}")
-            
-            if 'Task 5:' in i:
-                parts = i.split('Task 5:')
-                if len(parts) > 1:
-                    self.state.task_id_5 = parts[1].strip()
-                    print(f"Found task 5 ID: {self.state.task_id_5}")
         # Print both IDs for verification
+        print(f"Task 3 ID: {self.state.task_id_3}")
         print(f"Task 4 ID: {self.state.task_id_4}")
-        print(f"Task 5 ID: {self.state.task_id_5}")
 
     @listen(or_(task_ids,'re-run'))
     def code_gen_m2(self):
-        task_id = self.state.task_id_4
+        task_id = self.state.task_id_3
         feedback = {"feedback": self.state.feedback}
         response = self.en_gen.crew().replay(task_id=task_id, inputs=feedback)
         print(response.raw)
 
     @listen(code_gen_m2)
     def static_testing_m2(self):
-        task_id = self.state.task_id_5
+        task_id = self.state.task_id_4
         response = self.en_gen.crew().replay(task_id=task_id)
         self.state.feedback = response['feedback']
         self.state.pass_fail = response['pass_fail']
         self.state.expected_coverage = response['expected_coverage']
-        
+
 
     @router(static_testing_m2)
     def router_2(self):
@@ -75,7 +75,7 @@ class RMJT(Flow[State]):
       else:
             return "Test Cases Passed"
 
-    
+
     @listen("Test Cases Passed")
     def show(self):
       print(self.state.expected_coverage)
